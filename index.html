@@ -122,6 +122,30 @@
   <button id="restart-btn" onclick="restartGame()">Restart Game</button>
 
   <script>
+    // Preload all images
+  const imageList = [
+    "images/pcaarrd.png",
+    "images/nomcaarrd.png",
+    "images/msu-naawan.png",
+    "images/cmu.png",
+    "images/ustp-claveria.png",
+    "images/dost.png",
+    "images/sweet-corn-spread.png",
+    "images/purple-sweet-potato-flour.png",
+    "images/saba-banana-flour.png",
+    "images/flavored-tilanggit.png",
+    "images/dry-mix-geopolymer-cement.png",
+    "images/bottled-bangus.png",
+    "images/fern-powder.png",
+    "images/nutrichicahron.png",
+    "images/bg.png"
+  ];
+  
+  // Create image objects to force preload
+  imageList.forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
     const categories = {
     1: [
         { name: "PCAARRD", img: "images/pcaarrd.png" },
@@ -260,3 +284,4 @@
 </body>
 
 </html>
+
