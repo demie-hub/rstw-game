@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory Game</title>
+  <style>
+  body {
+  font-family: Arial, sans-serif;
+  background: url("images/bg.png") no-repeat center bottom fixed;
+  background-size: cover;  /* show full image by default */
+  background-color: #000;    /* fill empty space */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+    h1 {
+      margin-bottom: 10px;
+    }
+    #controls {
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #category {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      background: #fff;
+      cursor: pointer;
+    }
+    #controls button {
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      background: #4CAF50;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #controls button:hover {
+      background: #45a049;
+    }
+    #game-board {
+      display: grid;
+      justify-content: center;
+      grid-template-columns: repeat(4, 120px);
+      gap: 1cm; /* spacing between cards */
+      margin-top: 20px;
+    }
+    .card {
+      width: 120px;
+      height: 120px;
+      background: #4CAF50;
+      color: white;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 10px;
+      user-select: none;
+      text-align: center;
+      padding: 5px;
+    }
+    .flipped {
+      background: #fff;
+      color: #000;
+      border: 2px solid #4CAF50;
+    }
+    #message {
+      margin-top: 20px;
+      text-align: center;
+    }
+    #message img {
+      max-width: 200px;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+    #timer {
+      margin: 15px;
+      font-weight: bold;
+    }
+    #restart-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background: #4CAF50;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+      transition: background 0.3s;
+    }
+    #restart-btn:hover {
+      background: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Memory Game</h1>
+  <div id="controls">
+    <label for="category">Category:</label>
+    <select id="category">
+      <option value="1">Institutions</option>
+      <option value="2">Products</option>
+    </select>
+    <button onclick="startGame()">Start</button>
+  </div>
+
+  <div id="timer">Time left: 60s</div>
+  <div id="game-board"></div>
+  <div id="message"></div>
+  <button id="restart-btn" onclick="restartGame()">Restart Game</button>
+
+  <script>
+    const categories = {
+    1: [
+        { name: "PCAARRD", img: "images/pcaarrd.png" },
+        { name: "NOMCAARRD", img: "images/nomcaarrd.png" },
+        { name: "MSU-NAAWAN", img: "images/msu-naawan.png" },
+        { name: "CMU", img: "images/cmu.png" },
+        { name: "USTP-CLAVERIA", img: "images/ustp-claveria.png" },
+        { name: "DOST", img: "images/dost.png" }
+    ],
+    2: [
+        { name: "Sweet Corn Spread", img: "images/sweet-corn-spread.png" },
+        { name: "Purple Sweet Potato Flour", img: "images/purple-sweet-potato-flour.png" },
+        { name: "Saba Banana Flour", img: "images/saba-banana-flour.png" },
+        { name: "Flavored Tilanggit", img: "images/flavored-tilanggit.png" },
+        { name: "Dry-Mix Geopolymer Cement", img: "images/dry-mix-geopolymer-cement.png" },
+        { name: "Bottled Bangus", img: "images/bottled-bangus.png" },
+        { name: "Fern Powder", img: "images/fern-powder.png" },
+        { name: "NutriChicahron", img: "images/nutrichicahron.png" }
+    ]
+    };
+
+    let cards;
+    let firstCard, secondCard;
+    let lockBoard;
+    let matchedPairs;
+    let timer;
+    let countdown;
+    let currentCategory;
+
+    const board = document.getElementById("game-board");
+    const messageDiv = document.getElementById("message");
+    const timerDiv = document.getElementById("timer");
+    const restartBtn = document.getElementById("restart-btn");
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function startGame() {
+      // pick category
+      const selected = document.getElementById("category").value;
+      currentCategory = categories[selected];
+
+      // reset variables
+      cards = [...currentCategory, ...currentCategory];
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+      matchedPairs = 0;
+      timer = 60;
+
+      board.innerHTML = "";
+      messageDiv.innerHTML = "";
+      restartBtn.style.display = "none";
+
+      shuffle(cards);
+    cards.forEach(item => {
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.dataset.name = item.name;
+    card.dataset.img = item.img;
+    card.innerHTML = "?"; // show ? when hidden
+    card.addEventListener("click", flipCard);
+    board.appendChild(card);
+    });
+
+      timerDiv.textContent = `Time left: ${timer}s`;
+      clearInterval(countdown);
+      countdown = setInterval(updateTimer, 1000);
+    }
+
+    function flipCard() {
+      if (lockBoard || this === firstCard || this.classList.contains("flipped")) return;
+
+      this.classList.add("flipped");
+      this.innerHTML = `<img src="${this.dataset.img}" alt="${this.dataset.name}" 
+                  style="max-width:100%; max-height:100%; border-radius:8px;">`;
+
+      if (!firstCard) {
+        firstCard = this;
+        return;
+      }
+
+      secondCard = this;
+      lockBoard = true;
+
+      if (firstCard.dataset.name === secondCard.dataset.name) {
+        matchedPairs++;
+        resetTurn();
+        if (matchedPairs === currentCategory.length) {
+          endGame(true);
+        }
+      } else {
+        setTimeout(() => {
+          firstCard.classList.remove("flipped");
+          firstCard.innerHTML = "?";
+          secondCard.classList.remove("flipped");
+          secondCard.innerHTML = "?";
+          resetTurn();
+        }, 1000);
+      }
+    }
+
+    function resetTurn() {
+      [firstCard, secondCard] = [null, null];
+      lockBoard = false;
+    }
+
+    function updateTimer() {
+      timer--;
+      timerDiv.textContent = `Time left: ${timer}s`;
+      if (timer <= 0) {
+        clearInterval(countdown);
+        endGame(false);
+      }
+    }
+
+    function endGame(win) {
+      clearInterval(countdown);
+      board.innerHTML = "";
+      restartBtn.style.display = "inline-block";
+      if (win) {
+        messageDiv.innerHTML = `<h2>🎉 Congratulations! You Won! 🎉</h2><img src="images/win.jpg" alt="Meme Cat">`;
+      } else {
+        messageDiv.innerHTML = `<h2>😿 Time's Up! You Lost!</h2><img src="images/sad.jpg" alt="Sad Cat">`;
+      }
+    }
+
+    function restartGame() {
+      startGame();
+    }
+  </script>
+</body>
+</html>
